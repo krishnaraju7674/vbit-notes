@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VBIT NoteShare – Vignana Bharathi Institute of Technology</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root{
+      --blue:#1565C0;--blue-mid:#1976D2;--blue-light:#42A5F5;--blue-pale:#E3F2FD;--blue-dark:#0D47A1;
+      --accent:#FF6F00;--accent-light:#FFF3E0;
+      --bg:#F0F4F8;--white:#fff;--border:#CFD8DC;--border-light:#ECEFF1;
+      --text:#1A2332;--muted:#546E7A;--muted2:#90A4AE;
+      --card-shadow:0 2px 12px rgba(21,101,192,.08);
+      --card-shadow-hover:0 6px 24px rgba(21,101,192,.16);
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
+    .page{display:none;}
+    .page.active{display:block;}
+
+    /* ─ NAVBAR ─ */
+    .navbar{background:var(--blue-dark);padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;height:60px;box-shadow:0 2px 12px rgba(13,71,161,.3);}
+    .nav-brand{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
+    .nav-logo{height:36px;width:auto;border-radius:4px;background:#fff;padding:3px 5px;}
+    .nav-title{display:flex;flex-direction:column;line-height:1.1;}
+    .nav-title-main{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:0.3px;}
+    .nav-title-sub{font-size:9px;color:rgba(255,255,255,.65);font-weight:500;letter-spacing:0.5px;text-transform:uppercase;}
+    .nav-links{display:flex;gap:4px;list-style:none;align-items:center;}
+    .nav-links a{text-decoration:none;color:rgba(255,255,255,.75);font-size:13px;cursor:pointer;font-weight:500;padding:6px 12px;border-radius:6px;transition:all .15s;}
+    .nav-links a:hover,.nav-links a.active{color:#fff;background:rgba(255,255,255,.15);}
+    .btn-nav-upload{background:var(--accent);color:#fff!important;border:none;padding:7px 16px!important;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s!important;background:var(--accent)!important;}
+    .btn-nav-upload:hover{background:#E65100!important;}
+    .nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(255,255,255,.3);transition:all .15s;}
+    .nav-avatar:hover{border-color:rgba(255,255,255,.7);}
+    .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;}
+    .hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;}
+    .mobile-menu{display:none;position:fixed;top:60px;left:0;right:0;background:var(--blue-dark);z-index:99;padding:8px 20px 16px;}
+    .mobile-menu.open{display:block;}
+    .mobile-menu a{display:block;padding:10px 4px;font-size:14px;font-weight:500;color:rgba(255,255,255,.8);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.1);}
+    .mobile-menu a:last-child{border-bottom:none;}
+
+    /* ─ AUTH ─ */
+    .auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:32px 16px;background:linear-gradient(135deg,#0D47A1 0%,#1565C0 50%,#1976D2 100%);}
+    .auth-card{background:var(--white);border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+    .auth-top{text-align:center;margin-bottom:28px;}
+    .auth-logo-img{height:52px;margin-bottom:10px;}
+    .auth-college{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+    .auth-app{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.5px;}
+    .auth-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+    .auth-card h2{font-size:16px;font-weight:600;margin-bottom:18px;text-align:center;color:var(--text);}
+    .a-field{margin-bottom:14px;}
+    .a-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+    .a-field input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;outline:none;background:#F8FAFC;font-family:'Inter',sans-serif;transition:all .15s;color:var(--text);}
+    .a-field input:focus{border-color:var(--blue-mid);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+    .btn-full{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;}
+    .btn-full:hover{background:var(--blue-dark);}
+    .btn-guest{width:100%;background:#fff;color:var(--text);border:1.5px solid var(--border);border-radius:10px;padding:11px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;margin-top:8px;}
+    .btn-guest:hover{border-color:var(--blue-mid);color:var(--blue);}
+    .auth-switch{text-align:center;font-size:13px;color:var(--muted);margin-top:18px;}
+    .auth-switch a{color:var(--blue);cursor:pointer;font-weight:600;}
+    .msg{font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none;}
+    .msg.err{background:#FFEBEE;color:#C62828;border:1px solid #FFCDD2;}
+    .msg.suc{background:#E8F5E9;color:#2E7D32;border:1px solid #C8E6C9;}
+    .or-divider{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted2);margin:14px 0;}
+    .or-divider::before,.or-divider::after{content:"";flex:1;height:1px;background:var(--border-light);}
+
+    /* ─ HOME ─ */
+    .hero{background:linear-gradient(135deg,var(--blue-dark) 0%,var(--blue-mid) 100%);padding:48px 24px 36px;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;top:-40px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.05);}
+    .hero::after{content:'';position:absolute;bottom:-60px;left:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04);}
+    .hero-inner{max-width:640px;margin:0 auto;text-align:center;position:relative;z-index:1;}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:5px 14px;font-size:11px;font-weight:600;color:#fff;margin-bottom:18px;letter-spacing:.5px;text-transform:uppercase;}
+    .hero h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-0.5px;line-height:1.2;}
+    .hero p{font-size:14px;color:rgba(255,255,255,.75);margin-bottom:24px;}
+    .search-box{background:#fff;border-radius:14px;padding:6px 6px 6px 18px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+    .search-box input{flex:1;border:none;outline:none;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);background:transparent;}
+    .search-box input::placeholder{color:var(--muted2);}
+    .search-box button{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;white-space:nowrap;}
+    .search-box button:hover{background:var(--blue-dark);}
+    .hero-stats{display:flex;justify-content:center;gap:32px;margin-top:24px;}
+    .hstat{text-align:center;}
+    .hstat-val{font-size:20px;font-weight:700;color:#fff;}
+    .hstat-label{font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;}
+
+    /* ─ FILTERS ─ */
+    .filters-bar{background:#fff;border-bottom:1px solid var(--border-light);padding:10px 28px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+    .filter-group{display:flex;align-items:center;gap:6px;}
+    .filter-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+    .filter-select{padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:'Inter',sans-serif;background:#fff;cursor:pointer;color:var(--text);outline:none;transition:border-color .15s;}
+    .filter-select:focus{border-color:var(--blue-mid);}
+    .filter-divider{width:1px;height:24px;background:var(--border-light);margin:0 4px;}
+
+    /* ─ CONTENT ─ */
+    .content{max-width:1140px;margin:28px auto;padding:0 24px;}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+    .section-header h2{font-size:15px;font-weight:700;color:var(--text);}
+    .results-count{font-size:12px;color:var(--muted);background:var(--blue-pale);padding:3px 10px;border-radius:999px;font-weight:500;}
+
+    /* ─ NOTE CARDS ─ */
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:40px;}
+    .note-card{background:#fff;border:1.5px solid var(--border-light);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+    .note-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--blue-light));opacity:0;transition:opacity .2s;}
+    .note-card:hover{border-color:var(--blue-light);box-shadow:var(--card-shadow-hover);transform:translateY(-2px);}
+    .note-card:hover::before{opacity:1;}
+    .note-thumb{height:60px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-bottom:12px;letter-spacing:1.5px;gap:6px;}
+    .note-file-icon{width:24px;height:24px;opacity:.8;}
+    .note-card h3{font-size:13px;font-weight:600;margin-bottom:5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);}
+    .note-card .meta{font-size:11px;color:var(--muted);margin-bottom:8px;}
+    .tag{display:inline-block;font-size:10px;padding:3px 10px;border-radius:999px;font-weight:600;}
+    .rating-stars-small{display:inline-flex;gap:1px;font-size:11px;color:#F5A623;margin-left:6px;}
+    .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);}
+    .like-btn{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;border:none;background:none;font-family:'Inter',sans-serif;padding:3px 8px;border-radius:6px;transition:all .15s;}
+    .like-btn:hover{background:#FFF0F3;color:#E91E63;}
+    .like-btn.liked{color:#E91E63;font-weight:600;}
+    .download-link{font-size:11px;color:var(--blue);text-decoration:none;font-weight:600;display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;transition:background .15s;}
+    .download-link:hover{background:var(--blue-pale);}
+    .empty-state{text-align:center;padding:56px 24px;color:var(--muted);grid-column:1/-1;}
+    .empty-state .empty-icon{font-size:36px;margin-bottom:12px;opacity:.4;}
+    .empty-state p{font-size:14px;margin-bottom:4px;font-weight:500;}
+    .empty-state span{font-size:12px;color:var(--muted2);}
+
+    /* ─ MODAL ─ */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,71,161,.4);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:#fff;border-radius:20px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.25);}
+    .modal-header{padding:22px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border-light);padding-bottom:16px;}
+    .modal-header h2{font-size:16px;font-weight:700;line-height:1.4;flex:1;margin-right:12px;color:var(--text);}
+    .modal-close{background:var(--bg);border:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--muted);transition:all .15s;flex-shrink:0;}
+    .modal-close:hover{background:var(--blue-pale);color:var(--blue);}
+    .modal-body{padding:20px 24px 24px;}
+    .modal-thumb{height:80px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;letter-spacing:2px;margin-bottom:18px;gap:8px;}
+    .modal-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+    .meta-item{background:var(--bg);border-radius:10px;padding:10px 14px;border:1px solid var(--border-light);}
+    .meta-item .key{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:3px;}
+    .meta-item .val{font-size:13px;font-weight:600;color:var(--text);}
+    .modal-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px;padding:14px;background:var(--bg);border-radius:10px;border-left:3px solid var(--blue-light);}
+    .modal-actions{display:flex;gap:10px;margin-bottom:20px;}
+    .btn-primary{flex:1;background:var(--blue);color:#fff;border:none;padding:11px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;}
+    .btn-primary:hover{background:var(--blue-dark);}
+    .btn-secondary{flex:1;background:#fff;color:var(--text);border:1.5px solid var(--border);padding:10px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+    .btn-secondary:hover{border-color:var(--blue-mid);color:var(--blue);background:var(--blue-pale);}
+    .rating-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:12px 14px;background:var(--accent-light);border-radius:10px;}
+    .stars{display:flex;gap:4px;}
+    .star{font-size:22px;cursor:pointer;color:#ddd;transition:color .1s;line-height:1;}
+    .star.filled,.star.hover{color:#FF6F00;}
+    .rating-label{font-size:12px;color:var(--muted);font-weight:500;}
+    .comments-section h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);}
+    .comment-item{padding:12px 14px;background:var(--bg);border-radius:10px;margin-bottom:8px;border:1px solid var(--border-light);}
+    .comment-author{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:3px;}
+    .comment-text{font-size:13px;color:var(--text);line-height:1.5;}
+    .comment-time{font-size:10px;color:var(--muted2);margin-top:4px;}
+    .comment-input-row{display:flex;gap:8px;margin-top:12px;}
+    .comment-input-row input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:#fff;transition:border-color .15s;}
+    .comment-input-row input:focus{border-color:var(--blue-mid);}
+    .btn-comment{background:var(--blue);color:#fff;border:none;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;white-space:nowrap;}
+    .btn-comment:hover{background:var(--blue-dark);}
+    .no-comments{font-size:12px;color:var(--muted2);font-style:italic;margin-bottom:10px;}
+
+    /* ─ UPLOAD PAGE ─ */
+    .page-header{background:#fff;border-bottom:1px solid var(--border-light);padding:24px 28px;}
+    .page-header-inner{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+    .page-header-icon{width:44px;height:44px;background:var(--blue-pale);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .page-header h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:700;color:var(--text);margin-bottom:2px;}
+    .page-header p{font-size:12px;color:var(--muted);}
+    .upload-content{max-width:1000px;margin:24px auto;padding:0 24px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start;}
+    .ucard{background:#fff;border:1.5px solid var(--border-light);border-radius:16px;padding:22px;}
+    .ucard h2{font-size:14px;font-weight:700;margin-bottom:18px;color:var(--text);display:flex;align-items:center;gap:8px;}
+    .ucard h2::before{content:'';display:inline-block;width:4px;height:16px;background:var(--blue);border-radius:2px;}
+    .drop-zone{border:2px dashed var(--border);border-radius:12px;padding:28px 16px;text-align:center;background:#FAFCFF;margin-bottom:18px;cursor:pointer;transition:all .2s;}
+    .drop-zone:hover,.drop-zone.dragover{border-color:var(--blue-mid);background:var(--blue-pale);}
+    .drop-icon{width:48px;height:48px;border-radius:50%;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+    .drop-icon svg{width:22px;height:22px;}
+    .drop-zone h3{font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text);}
+    .drop-zone p{font-size:11px;color:var(--muted);margin-bottom:14px;}
+    .btn-browse{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:7px 18px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;font-weight:500;}
+    .btn-browse:hover{border-color:var(--blue-mid);color:var(--blue);}
+    .file-types{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+    .ftype{font-size:10px;padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:#fff;}
+    .u-field{margin-bottom:14px;}
+    .u-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+    .u-field input,.u-field select,.u-field textarea{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);background:#FAFCFF;outline:none;font-family:'Inter',sans-serif;transition:all .15s;}
+    .u-field input:focus,.u-field select:focus,.u-field textarea:focus{border-color:var(--blue-mid);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.08);}
+    .u-field textarea{height:80px;resize:vertical;}
+    .field-row{display:flex;gap:12px;}
+    .field-row .u-field{flex:1;}
+    .btn-submit{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-submit:hover{background:var(--blue-dark);}
+    .btn-submit:disabled{background:#B0BEC5;cursor:not-allowed;}
+    .preview-thumb{background:var(--blue-pale);border-radius:10px;height:72px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--blue);margin-bottom:16px;letter-spacing:2px;gap:8px;}
+    .preview-row{display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-bottom:1px solid var(--border-light);}
+    .preview-row:last-of-type{border-bottom:none;}
+    .preview-row .key{color:var(--muted);}
+    .preview-row .val{font-weight:600;color:var(--text);max-width:60%;text-align:right;word-break:break-word;}
+    .tips{background:var(--blue-pale);border-radius:12px;padding:16px;margin-top:16px;border:1px solid rgba(21,101,192,.1);}
+    .tips h3{font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+    .tips ul{list-style:none;}
+    .tips ul li{font-size:11px;color:var(--blue);margin-bottom:6px;padding-left:16px;position:relative;}
+    .tips ul li::before{content:"✓";position:absolute;left:0;font-weight:700;color:var(--blue-light);}
+    .progress-wrap{display:none;margin:12px 0;}
+    .progress-track{background:var(--border-light);border-radius:99px;height:6px;overflow:hidden;}
+    .progress-bar{height:100%;background:var(--blue);border-radius:99px;width:0%;transition:width .3s;}
+    .progress-text{font-size:11px;color:var(--muted);text-align:right;margin-top:4px;}
+
+    /* ─ PROFILE PAGE ─ */
+    .profile-wrap{max-width:960px;margin:28px auto;padding:0 24px;}
+    .profile-header{background:linear-gradient(135deg,var(--blue-dark),var(--blue-mid));border-radius:18px;padding:28px 28px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px;position:relative;overflow:hidden;}
+    .profile-header::after{content:'';position:absolute;right:-30px;top:-30px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06);}
+    .profile-avatar{width:68px;height:68px;border-radius:50%;background:var(--accent);color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:3px solid rgba(255,255,255,.3);}
+    .profile-info h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:3px;}
+    .profile-info p{font-size:12px;color:rgba(255,255,255,.65);}
+    .profile-stats{display:flex;gap:24px;margin-top:12px;}
+    .pstat{text-align:center;}
+    .pstat-val{font-size:22px;font-weight:700;color:#fff;}
+    .pstat-label{font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;}
+    .profile-notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+    .profile-empty{text-align:center;padding:48px;color:var(--muted);font-size:13px;}
+
+    /* ─ TOAST ─ */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--blue-dark);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(13,71,161,.3);}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+
+    /* ─ FOOTER ─ */
+    .footer{background:var(--blue-dark);color:rgba(255,255,255,.5);text-align:center;padding:16px;font-size:11px;margin-top:40px;}
+    .footer span{color:rgba(255,255,255,.8);font-weight:600;}
+
+    /* ─ RESPONSIVE ─ */
+    @media(max-width:768px){
+      .upload-content{grid-template-columns:1fr;}
+      .hamburger{display:flex;}
+      .nav-links{display:none;}
+      #nav-right-wrap{display:none;}
+      .hero h1{font-size:22px;}
+      .hero-stats{gap:20px;}
+      .modal-meta{grid-template-columns:1fr;}
+      .modal-actions{flex-direction:column;}
+      .profile-header{flex-direction:column;text-align:center;}
+      .profile-stats{justify-content:center;}
+      .field-row{flex-direction:column;gap:0;}
+      .filters-bar{padding:10px 14px;}
+      .content{padding:0 14px;}
+      .profile-wrap{padding:0 14px;}
+      .upload-content{padding:0 14px;}
+    }
+    @media(max-width:480px){
+      .card-grid{grid-template-columns:1fr 1fr;}
+      .nav-title-sub{display:none;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-brand" onclick="goHome()">
+    <img class="nav-logo" src="data:image/jpeg;base64,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" alt="VBIT Logo" />
+    <div class="nav-title">
+      <span class="nav-title-main">VBIT NoteShare</span>
+      <span class="nav-title-sub">Vignana Bharathi Institute of Technology</span>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a id="nav-browse" onclick="goHome()">Browse</a></li>
+    <li id="li-upload" style="display:none"><a onclick="showPage('upload')">Upload</a></li>
+    <li id="li-profile" style="display:none"><a onclick="showPage('profile')">My Notes</a></li>
+    <li id="li-login"><a onclick="showPage('login')">Log in</a></li>
+    <li id="li-logout" style="display:none"><a onclick="doLogout()">Log out</a></li>
+    <li id="li-upload-btn" style="display:none"><a class="btn-nav-upload" onclick="showPage('upload')">+ Upload</a></li>
+  </ul>
+  <div id="nav-right-wrap">
+    <button class="btn-nav-upload" onclick="showPage('login')" id="nav-login-btn">+ Upload Notes</button>
+  </div>
+  <div class="hamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="closeMobileMenu();goHome()">📚 Browse Notes</a>
+  <a id="mm-upload" style="display:none" onclick="closeMobileMenu();showPage('upload')">⬆ Upload Notes</a>
+  <a id="mm-profile" style="display:none" onclick="closeMobileMenu();showPage('profile')">👤 My Notes</a>
+  <a id="mm-login" onclick="closeMobileMenu();showPage('login')">🔐 Log In</a>
+  <a id="mm-logout" style="display:none" onclick="closeMobileMenu();doLogout()">↩ Log Out</a>
+</div>
+
+<!-- LOGIN -->
+<div id="page-login" class="page active">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-top">
+        <img class="auth-logo-img" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAIUA4QMBIgACEQEDEQH/xAAbAAEBAAMBAQEAAAAAAAAAAAAABgQFBwMCAf/EAEkQAAEDAwICBQUIEgEFAQAAAAEAAgMEBREGEiExBxNBUYEUImFxkRUyNDZ0obGzFhcjQlRWcnN2kpOVssHC0eLwUmKCouHxM//EABoBAQACAwEAAAAAAAAAAAAAAAAFBgIDBAH/xAAxEQACAgAEBAUCBQUBAAAAAAAAAQIDBBEhMQUSE0EiYXGhsdHwMjNCUcE0coGRwhT/2gAMAwEAAhEDEQA/AO4oiIAiIgCIiAKJ0N8btbfL4vqgrZROhvjdrb5fF9UEBF3DUFBT3usoa2Q00zJXEGUYY9pPAh3L2445WfG9sjA+NzXNPEOacgqb6SLc6UPudOAJ6SZ247Q7LN3Mg88Hjx4YJVba9Fad1NZaS92N9XZZqqMSPFvm2xtkHBzSw5bwIIwMclW1g6rq1ZF5Pv31+/Un546dE+SazXb0J/o/sstRqTUVHR3mvtdTBIyeJ1K4FkjX54PjcC12PN4+lXrLFrEYadaxObnm6zR7sesPx8ymqbQusLDeX3iyXu211U+EwOFfTujDo8g4OwnJ80ceC2z7z0jUoAl0nbK0jm6luAjHsecqU8TS1T0X3qQ02nJtbGJ0PakvWomXd98rTUGF0Ijb1TGCMnfuxtaM8hz7l0Zcc0RR660m2vbBo4VRrJBITJcIY9mM8PfHPNVok6R7hhraew2iM++e976iRvqA80+KWQTk2msjFM3mr9RUmmLHPX1T29ZtLaeLPGaTHmtH8+4ZK5H0f0Zo9Osc/OZ3l/EdgAaP4c+K2uvNLR263RS3W51N61Fc5W0lPPUgCOBp4yPZGODQGj04JB4LMp4Y6aCKCAbY4mhjB3ADAXBj5xhSoLdv4JThdTlY7H2NnPZblTwummo3tjaMudkHA8CsHB2l2DtBwTjgFs7PdjRVT3VnXVEEkZjfGX5znHYT/uVnSahgo2Ngs1ExlMSXStnGS8ns5rhVdEo83Nl5PV/wSTsvi+Xlz89l/J66OujIHe5743F08pcxwxgeb2+xWan7DSW+u6q6wUnkszHOGxjvNJxjl4+hUCsGAjONKUnmu3oQOOlCVzcVk+/qQvRP8H1T+klZ/QrpQvRP8H1T+klZ/QrpdpxhERAEREAREQBERAEREAREQBERAFE6G+N2tvl8X1QVsonQ3xu1t8vi+qCAnrhGyWeqjkaHMe97XNPIgk5C8eiGtfabtddKVL3Fod5VRl33zeAcB4bT69yyKv4XUfnXfSVO6gMtrrbdqWjYXT2yYOla3nJCeDh7CR/3FVjBW8trre0vnt9CxY+jqUqa3j8dztyLypaiGspYaqmkEkE0bZI3t5OaRkH2FeqkCDPWIcCv2U4bjvSL3vitNrG9s09p6vusmCaaEmNpPvpDwY3xcQF27UpLua+5zu/VgvmvKuZp3Utmj8jh7QZncZSPSODfBey12nqKSgtMMdQ4uqZMy1D3c3SOOXE+Jx4LYqtYu1WWtrZaL79y04OrpUpPfdhERcx0mfbbxW21j2UsoDH/AHrhkA949KoNKXurq6o0dWTNlpe2THFvoPo/31SC2en7mLXX9bI3dE9ux+BxA7wu3CYmddkU5NROPFYaE65NR8Rm9E//AOGqf0krP6FdLAtd3pbp1vkpdmMjIeMHB5H1LPVphOM480XmiszhKD5ZLJhERZGIREQBERAEREAREQBERAEREAUTob43a2+XxfVBWyidDfG7W3y+L6oIDQVfwuo/Ou+krwljZNE+KVodG9pa5p5EHmF71fwuo/Ou+kryVJlpIuUfwo23RRXPjt1Xp2qeXT2mTELnc3078mM+HFvowFdrj9TWv0/d6HUUTSWU56iua0ZL6Z5GT6S04cB6CrLpH1CyzaRbcqSZr3yVFO6n2OH3YCRryAe0FjXeCnqZ9eKkt3v6/epWcTT0LHHt29C0i94uY9J9aLnqG0aejJMUJ90awA9jctjafWcnHqKv23i3ix+7HlUYoOp6/r93m7MZyuP2KeW71Vy1FVNc2W5zl0bXc2Qt81jfYFuxdvSoz75e7+mowdXVvS7bm4REVZLQEREAREQFfoehLWy15k4OBiawesEk/wC96q1z/Td0qqWrgpInN6iaZoc1wzzwCQugKz8MnCVCUe2/qVviUJxvbl32CIikSPCIiAIiIAiIgCIiAIiIAiIgCidDfG7W3y+L6oK2UTob43a2+XxfVBAaCr+F1H5130leS9av4XUfnXfSV5KkS3Zc47I+ZY2TRPilaHxvaWuaeRB5hcivVLPbayWglke5lOT1Ic4kbTxBA7M9uO1dfUl0gWvr6OO4xN+6U/myY7WE8/A/SVJcLxHTt5HtL5I/iVHUq51uvgzNTaFht2l7fU0t5r3R3F0Apra85jbLIA5zjxxgAPPLPAcVvaaCOlp4qeEYjiYGNHoAwsXy33Ydp5gOYLVZqf8AbzRNJ9jA39crOWfFruaxVrt8mHC6eWt2Pv8AAREUSSgREQBERAV2k7NTzUsVwmDzKJSY8OwMA4+kFVildCsqOpqJHSO8nyGsYeW7tI+ZVStfD1FYeLSyz9/Mq+PcnfJN55BERdpxhERAEREAREQBERAEREAREQBROhvjdrb5fF9UFbKJ0N8btbfL4vqggNBV/C6j8676SvJVk2j5ZJpJBWsAe8ux1R4ZOe9fH2FzfhzP2R/uqrLh+Kzfg919Szxx+GyXi+SWXxNEyeJ8UrQ+ORpa5p5EHgQqz7C5vw5n7I/3T7C5vw5n7I/3Xi4fil+j3X1Pf/fhn+r2f0IeyW1tqt7KVrzIQSTI7m7sHsaAPBZ6qfsLm/Dmfsj/AHWFc9MVtFGJIiKln33Vtw5vh2pdhMVrZOPx/AqxeG0hCRo0WXR22trY3yUtM+RjObh9A7z6ljPa5jyx7XNc04LXDBBXI4SSTa0Z1KUW2k9UfKL9DSQSASB2gL8JwMrEyCp9EU1LLPUSy4dPGAGtcOAaeZ9fZ/8AVkt0fC6hG2qd5SfO6zb5vqx/7W7tFqp7VT9XANz3cZJHc3n+3oUzguH3QuU5pZIiMZj6p0uMHqzMijjhYGRMaxg5NaMBfaIp/YgtwiIgCIiAIiIAiIgCIiAIiIAiIgCirl0cUdbd625w3/UFBLWyCSaOhrGxMJAA5be4dpVqiAg/tZR/jjrD96f4J9rKP8cdYfvT/BXiICD+1lH+OOsP3p/gn2so/wAcdYfvT/BXiICD+1lH+OOsP3p/gq+z28Wq2QUIqqqqELcdfVSb5X8c5c7AyeKzUQAADkp+46Vp6yqlqRUyxukduIwCMqgRaraK7llNZm2q6yp5weRh2qgjttCyljdvDclziMbiViw6ctcUzpfJg8lxIa85a30AcsLbIjoqaScVpsOvYm2pb7gAAYHAIiLaagiIgCIiAIiIAiIgCIiAIiIAiIgCIiA02r6SWrsFSKd72zRDrWbHEE7eY4d4yFF6dv3kWnLvTSSnrQ3dTkuycv8ANOPUcHxK6aeIweS4vf6D3Ku1VS4wyN5Mf5B4t+Y48FzX5xakiMx/NVJWx80bzTtNM7TF8rXyy7RCY4hvPAgbif4fnXtoCtZRRXisqnuMUMUbnccn77l6St/LQ+5egJqZwxIKRxk/LcMn5ypbSNvddbXfqKNwbLJHAWE8stc8gH0ZAWHK4yilvkaeSVVlaW+T/wB5M+Y629anupliqXUscP3QuEhZHTM7yRzPP18eQ5UepKqGbRlS2G6RV8sRi3zRvbnPWN5hvJStlvr7NRXG21FKS2cPaeOHRv27Tn0LxtWDp2/8ve031qxjPRru8zVC7wtZ5uSln5aM22i9Tm3yihuEhNLI7zJHHPVOPf8A9J+b6PrTE00+t5BLUSStY+fbueXDGSBhYVo077r6bqaulB8tgqHBrc8JG7Wnb6+Jx/uP3QB26ljDuH3J448McEi5ZxTPapWc1UZbZ6G86SbmYoqa3QyFr3nrZNpwQ0cGjxOf1VgdHdzfFdJqCeRxbUNywPOcPb2eIz+qtRXVFVftRzVNFTmqIfvjixuBjaQBkdx4Z9a+LhUXGivzbjWUnk1UZGz9W1u0HjxxxPPBz6yjm+fnE731ustk/Y3HSJLLBqKB8Mr43ClY4FrsYO96yK3VHuppKoaZXQXGEx7xG4t3jcBubjs7x2LA6RpmTXSmnhcCx9Cx7T3gueQvPWOnPceZtTStcaKU4GePVO/4n0dx8PWk5KUmtj2ydkZ2uG3f/Pcq+jsvdYHPe5znOqHnLjk8gP5KH1JdZLneaqoilf1IdsjDXHGwcAfHn4re2u5G3dH9Q5h2zSzvhjOe13M+AyfBaWz0l1NDVeQ2wVMFZGYTKWE7QD96cjBzjv4gJN5xjFC6blXXVH9s2dB0bcjcrDA+R+6aH7lKe3I5E+sYPit4ub9HFf1F1moXnDahmWg/829nsz7F0hdVMuaCJPB29SlN77BERbDpCIiAIiIAiIgCIiAIiIAiLDvFeLZbZ610ZkELclgOM8cLxvJZnjais2Zixqi30VTMJqijp5ZW4w+SJrnDHLiQpA9IkW4D3Nft9Mwz7MLcz6ophp914pIzMxrmsfEXbXMJIGDz71grYS7nOsTRNPXPLU3k0Uc8Topo2yRuGHMeMgj0hedLRUtGCKSmhgB59VGG59i1+mr42/UctQ2AwGOXqy0v3Z4A55Dv+ZYFs1ay4Xz3LFE5h3yN6wyZHm57MduF7zx0f7mfWq8Ms99jeT26hqJetqKKmllH38kTXH2kL0fSUz4TC+nidEcZYWAtOOI4LA1He4rFRMqJIjK58gY2MOxnmTx9QWPpnUkN+M7GwGCSHB2l27cD2/MnNHm5e46lSs6fdm4p6aClYWU0EcLCclsbA0E9/BeTbdQsqHVDKKmbO7O6URNDjnnk4zxWo1DquCx1jaWSllmkdEJAWkAYJI/ktdTa/pjUNjraGWnYcZfu3bR3kYHD1ZXjsrTyZhLEURlyyexVU1BR0ry+lpIIXkYLo4w0kd3BKmipKstNVSwTFvBpljDserK92uDmhzSC0jII5FR0uv6WOufB5G8wtlLDOJBgtBxuAx4r2UoxWpnZZVUkp6JlPJbLfKGCWhpXhjQxodC07WjkBw5ehe88MVRE6KeNksbvfMe0OB9YK+aupjpaSaqlP3KKMyOI7gMqPb0iU5HnW6YH0SApKcI7nll1VWknlmVYtlvEAgFDS9SHbhH1LdoPfjHNZEMMVPE2KCNkcbeTGNAA8ApeLWrJ7ZW10Vvk20hjBDpAN292OeDyWz0zfW36lmmFOYDFJsLS/dngDnkO9eRnBvJHkLqZSSi9WZzLdQxz9fHRUzZsl3WNiaHZPM5wspS9HrBlVe3WttC4OEkrBJ1g47A48sdu35009q9t7uIpGULoQYy/eZc8sdmPSishshHEU5pRe79yoREWw6AiIgCIiAIiIAiIgCIiALSa0+LFd+S3+IIiwn+Fmq/8qXozmENzqYbXPbmdX5PO8PflmXZGOR7OQVBT2+On6PK6sDnOkqnxlw7GhsoAH0nxRFxV655/syCw/i58+0XkaK23q5WuOSO31RhZIdzgGNdk+IK2WiHuk1XTyPOXu6xzj3ktdlEWMG+ZIww8pO2Cb0zRl9ItTJPfYqQnEcMQ2+tx4n5h7F4abD7RrVtJG/e3rX07iRjc3j/MAoi2P8zPzOif9Q5d+ZHt0ljN8h9NI0f+T1p77fZL7LTvfAyFsLOraAck95J/l2IiwtbU2jTipyV04rZnSLw+SzaTlbA8ukgpmxNkPA54N3evjlcuFGPch1dv97Utg2Y72F2c+C/EW29eLLyOriCXUS7JHT9JSi56WpRWRslbsMTmvG4ODSWjIPPgAorpBgip76I6eJkTPJmnaxoaM5d3Iiyt/JTM8Trg4t76fBWauoKSi0nXso6aKBrnRucI2BoJD29y5/bbzcbWyRlvqjC2QguAY12T4goiwxHhmsjTxBuFy5dNO3qzO0c90urKWSR2573Suce8ljySsjo1Gb+30UrvpaiLGvePr9DVh/xV/wBz/wCTqKIi7ywhERAEREAREQH/2Q==" alt="VBIT" />
+        <div class="auth-college">Vignana Bharathi Institute of Technology</div>
+        <div class="auth-app">NoteShare</div>
+        <div class="auth-sub">Your college notes, organized and shared</div>
+      </div>
+      <h2>Welcome back 👋</h2>
+      <div class="msg err" id="loginErr"></div>
+      <div class="a-field"><label>Email address</label><input type="email" id="loginEmail" placeholder="you@vbit.ac.in" /></div>
+      <div class="a-field"><label>Password</label><input type="password" id="loginPass" placeholder="Enter your password" onkeyup="if(event.key==='Enter')doLogin()" /></div>
+      <button class="btn-full" onclick="doLogin()">Log in</button>
+      <div class="or-divider">or</div>
+      <button class="btn-guest" onclick="guestLogin()">Continue as guest (browse only)</button>
+      <div class="auth-switch">No account? <a onclick="showPage('signup')">Sign up free</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div id="page-signup" class="page">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-top">
+        <img class="auth-logo-img" src="data:image/jpeg;base64,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" alt="VBIT" />
+        <div class="auth-college">Vignana Bharathi Institute of Technology</div>
+        <div class="auth-app">NoteShare</div>
+        <div class="auth-sub">Join your fellow VBIT students</div>
+      </div>
+      <h2>Create your account</h2>
+      <div class="msg err" id="signupErr"></div>
+      <div class="msg suc" id="signupSuc">Account created! Check your email to confirm, then log in.</div>
+      <div class="a-field"><label>Full name</label><input type="text" id="signupName" placeholder="Your full name" /></div>
+      <div class="a-field"><label>Email address</label><input type="email" id="signupEmail" placeholder="you@vbit.ac.in" /></div>
+      <div class="a-field"><label>Password</label><input type="password" id="signupPass" placeholder="At least 6 characters" /></div>
+      <div class="a-field"><label>Confirm password</label><input type="password" id="signupConfirm" placeholder="Repeat your password" onkeyup="if(event.key==='Enter')doSignup()" /></div>
+      <button class="btn-full" onclick="doSignup()">Create account</button>
+      <div class="auth-switch">Already have an account? <a onclick="showPage('login')">Log in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="page-home" class="page">
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🎓 VBIT – Vignana Bharathi Institute of Technology</div>
+      <h1>Find Notes for Any Engineering Subject</h1>
+      <p>Shared by VBIT students, for VBIT students. Access quality notes anytime.</p>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search by subject, topic or title..." onkeyup="if(event.key==='Enter')loadNotes()" />
+        <button onclick="loadNotes()">🔍 Search</button>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-val" id="statTotal">—</div><div class="hstat-label">Notes shared</div></div>
+        <div class="hstat"><div class="hstat-val">4</div><div class="hstat-label">Years covered</div></div>
+        <div class="hstat"><div class="hstat-val">6</div><div class="hstat-label">Branches</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="filters-bar">
+    <div class="filter-group">
+      <span class="filter-label">Branch</span>
+      <select id="filterBranch" class="filter-select" onchange="loadNotes()">
+        <option>All</option><option>Common</option><option>CSE/IT</option>
+        <option>ECE</option><option>EEE</option><option>Mechanical</option><option>Civil</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Year</span>
+      <select id="filterYear" class="filter-select" onchange="loadNotes()">
+        <option>All</option><option>1st year</option><option>2nd year</option><option>3rd year</option><option>4th year</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Subject</span>
+      <select id="filterSubject" class="filter-select" onchange="loadNotes()">
+        <option value="">All subjects</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Type</span>
+      <select id="filterType" class="filter-select" onchange="loadNotes()">
+        <option value="">All types</option>
+        <option>Handwritten</option><option>Typed PDF</option><option>Slides</option><option>Diagram / chart</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <select id="filterSort" class="filter-select" onchange="loadNotes()">
+        <option value="newest">Newest</option>
+        <option value="popular">Most liked</option>
+        <option value="rated">Top rated</option>
+      </select>
+    </div>
+  </div>
+
+  <main class="content">
+    <div class="section-header">
+      <h2 id="resultsLabel">Recently uploaded</h2>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+    <div class="card-grid" id="notesGrid">
+      <div class="empty-state"><div class="empty-icon">📂</div><p>Loading notes...</p></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>VBIT NoteShare</span> · Vignana Bharathi Institute of Technology, Hyderabad · For students, by students
+  </footer>
+</div>
+
+<!-- UPLOAD PAGE -->
+<div id="page-upload" class="page">
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="page-header-icon">📤</div>
+      <div>
+        <h1>Upload Your Notes</h1>
+        <p>Help your fellow VBIT students — share what you've learned</p>
+      </div>
+    </div>
+  </div>
+  <div class="upload-content">
+    <div class="ucard">
+      <h2>Note Details</h2>
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1565C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v13M7 8l5-5 5 5"/><path d="M3 19h18"/>
+          </svg>
+        </div>
+        <h3>Drag & drop your file here</h3>
+        <p>or click to browse from your device</p>
+        <button class="btn-browse" onclick="document.getElementById('fileInput').click()">Choose file</button>
+        <input type="file" id="fileInput" accept=".pdf,image/*" style="display:none" />
+        <div class="file-types">
+          <span class="ftype">PDF</span><span class="ftype">JPG</span>
+          <span class="ftype">PNG</span><span class="ftype">Max 20 MB</span>
+        </div>
+      </div>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-text" id="progressText">Uploading...</div>
+      </div>
+      <div class="u-field"><label>Note title *</label><input type="text" id="noteTitle" placeholder="e.g. Data Structures – Binary Trees (Ch. 5)" oninput="updatePreview()" /></div>
+      <div class="field-row">
+        <div class="u-field"><label>Branch *</label>
+          <select id="branch" onchange="populateSubjects();updatePreview()">
+            <option value="">Select branch...</option>
+            <option>Common</option><option>CSE/IT</option><option>ECE</option>
+            <option>EEE</option><option>Mechanical</option><option>Civil</option>
+          </select>
+        </div>
+        <div class="u-field"><label>Year *</label>
+          <select id="classYear" onchange="populateSubjects();updatePreview()">
+            <option value="">Select year...</option>
+            <option>1st year</option><option>2nd year</option><option>3rd year</option><option>4th year</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="u-field"><label>Semester *</label>
+          <select id="semester" onchange="populateSubjects();updatePreview()">
+            <option value="">Select semester...</option>
+            <option>Semester 1</option><option>Semester 2</option>
+            <option>Semester 3</option><option>Semester 4</option>
+            <option>Semester 5</option><option>Semester 6</option>
+            <option>Semester 7</option><option>Semester 8</option>
+          </select>
+        </div>
+      </div>
+      <div class="u-field"><label>Subject *</label>
+        <select id="subject" onchange="updatePreview()"><option value="">Select subject...</option></select>
+      </div>
+      <div class="field-row">
+        <div class="u-field"><label>Topic / chapter</label><input type="text" id="topic" placeholder="e.g. Chapter 5 – Binary Trees" oninput="updatePreview()" /></div>
+        <div class="u-field"><label>Note type</label>
+          <select id="noteType" onchange="updatePreview()">
+            <option value="">Select type...</option>
+            <option>Handwritten</option><option>Typed PDF</option><option>Slides</option><option>Diagram / chart</option>
+          </select>
+        </div>
+      </div>
+      <div class="u-field"><label>Description</label><textarea id="description" placeholder="Briefly describe what topics are covered in this note..."></textarea></div>
+      <button class="btn-submit" id="submitBtn" disabled onclick="doUpload()">📤 Upload Notes</button>
+    </div>
+    <div>
+      <div class="ucard">
+        <h2>Preview</h2>
+        <div class="preview-thumb" id="previewThumb">📄 PDF</div>
+        <div class="preview-row"><span class="key">Title</span><span class="val" id="pvTitle">—</span></div>
+        <div class="preview-row"><span class="key">Branch</span><span class="val" id="pvBranch">—</span></div>
+        <div class="preview-row"><span class="key">Year</span><span class="val" id="pvYear">—</span></div>
+        <div class="preview-row"><span class="key">Semester</span><span class="val" id="pvSemester">—</span></div>
+        <div class="preview-row"><span class="key">Subject</span><span class="val" id="pvSubject">—</span></div>
+        <div class="preview-row"><span class="key">File</span><span class="val" id="pvFile">No file selected</span></div>
+        <div class="preview-row"><span class="key">Topic</span><span class="val" id="pvTopic">—</span></div>
+        <div class="preview-row"><span class="key">Type</span><span class="val" id="pvType">—</span></div>
+        <div class="preview-row"><span class="key">Uploaded by</span><span class="val" id="pvUploader">—</span></div>
+      </div>
+      <div class="tips">
+        <h3>Tips for a great upload</h3>
+        <ul>
+          <li>Use a clear, descriptive title</li>
+          <li>Pick the right branch, year and subject</li>
+          <li>Handwritten? Upload a clear, well-lit photo</li>
+          <li>PDFs are easier to read and get more downloads</li>
+          <li>Add a description so others know what's covered</li>
+          <li>Your name will appear as the uploader — be proud!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div id="page-profile" class="page">
+  <div class="profile-wrap">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-info">
+        <h2 id="profileName">—</h2>
+        <p id="profileEmail">—</p>
+        <div class="profile-stats">
+          <div class="pstat"><div class="pstat-val" id="statUploads">0</div><div class="pstat-label">Uploads</div></div>
+          <div class="pstat"><div class="pstat-val" id="statLikes">0</div><div class="pstat-label">Likes received</div></div>
+          <div class="pstat"><div class="pstat-val" id="statRatings">—</div><div class="pstat-label">Avg rating</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-header"><h2>My Uploaded Notes</h2></div>
+    <div class="profile-notes-grid" id="profileGrid">
+      <div class="profile-empty">Loading your notes...</div>
+    </div>
+  </div>
+  <footer class="footer" style="margin-top:32px;">
+    <span>VBIT NoteShare</span> · Vignana Bharathi Institute of Technology, Hyderabad
+  </footer>
+</div>
+
+<!-- NOTE DETAIL MODAL -->
+<div class="modal-overlay" id="noteModal" onclick="closeModalOverlay(event)">
+  <div class="modal" id="modalInner">
+    <div class="modal-header">
+      <h2 id="modalTitle">—</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-thumb" id="modalThumb">📄 PDF</div>
+      <div class="modal-meta">
+        <div class="meta-item"><div class="key">Branch</div><div class="val" id="modalBranch">—</div></div>
+        <div class="meta-item"><div class="key">Year</div><div class="val" id="modalYear">—</div></div>
+        <div class="meta-item"><div class="key">Subject</div><div class="val" id="modalSubject">—</div></div>
+        <div class="meta-item"><div class="key">Type</div><div class="val" id="modalType">—</div></div>
+        <div class="meta-item"><div class="key">Topic</div><div class="val" id="modalTopic">—</div></div>
+        <div class="meta-item"><div class="key">Uploaded by</div><div class="val" id="modalUploader">—</div></div>
+      </div>
+      <div class="modal-desc" id="modalDesc" style="display:none"></div>
+      <div class="rating-row">
+        <div class="stars" id="modalStars">
+          <span class="star" data-v="1" onclick="rateNote(1)">★</span>
+          <span class="star" data-v="2" onclick="rateNote(2)">★</span>
+          <span class="star" data-v="3" onclick="rateNote(3)">★</span>
+          <span class="star" data-v="4" onclick="rateNote(4)">★</span>
+          <span class="star" data-v="5" onclick="rateNote(5)">★</span>
+        </div>
+        <span class="rating-label" id="ratingLabel">Rate this note</span>
+      </div>
+      <div class="modal-actions">
+        <a class="btn-primary" id="modalDownload" href="#" target="_blank">⬇ Download Note</a>
+        <button class="btn-secondary" id="modalLikeBtn" onclick="likeNoteModal()">♡ Like (<span id="modalLikeCount">0</span>)</button>
+      </div>
+      <div class="comments-section">
+        <h3>💬 Comments (<span id="commentsCount">0</span>)</h3>
+        <div id="commentsList"><p class="no-comments">No comments yet. Be the first to comment!</p></div>
+        <div class="comment-input-row">
+          <input type="text" id="commentInput" placeholder="Add a comment..." onkeyup="if(event.key==='Enter')postComment()" />
+          <button class="btn-comment" onclick="postComment()">Post</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL  = 'https://gsufmznjaphalkyyrwcf.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdWZtem5qYXBoYWxreXlyd2NmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDA3OTQsImV4cCI6MjA5MTU3Njc5NH0.tNYQuPxPYjpE5RglBUCl1lg7EhEsc9v6mYaIzDD0bMQ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentUser = null;
+let currentNote = null;
+let likedNotes = JSON.parse(localStorage.getItem('likedNotes')||'[]');
+let myRatings  = JSON.parse(localStorage.getItem('myRatings')||'{}');
+
+sb.auth.onAuthStateChange((event, session) => {
+  if(session?.user){
+    const meta = session.user.user_metadata;
+    currentUser = { id: session.user.id, name: meta.full_name || session.user.email, email: session.user.email };
+    setUser(currentUser);
+    if(document.querySelector('#page-login.active')||document.querySelector('#page-signup.active')) showPage('home');
+  } else {
+    if(currentUser && currentUser.email) { currentUser = null; setUser(null); }
+  }
+});
+
+async function doSignup(){
+  const name=document.getElementById('signupName').value.trim();
+  const email=document.getElementById('signupEmail').value.trim();
+  const pass=document.getElementById('signupPass').value;
+  const confirm=document.getElementById('signupConfirm').value;
+  const err=document.getElementById('signupErr'); const suc=document.getElementById('signupSuc');
+  err.style.display='none'; suc.style.display='none';
+  if(!name||!email||!pass||!confirm){showMsg(err,'Please fill in all fields.');return;}
+  if(pass.length<6){showMsg(err,'Password must be at least 6 characters.');return;}
+  if(pass!==confirm){showMsg(err,'Passwords do not match.');return;}
+  const{error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+  if(error){showMsg(err,error.message);return;}
+  suc.style.display='block';
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginErr');
+  err.style.display='none';
+  if(!email||!pass){showMsg(err,'Please fill in all fields.');return;}
+  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){showMsg(err,'Incorrect email or password.');return;}
+  showPage('home');
+}
+
+function guestLogin(){
+  currentUser={id:null,name:'Guest',email:''};
+  setUser(currentUser); showPage('home');
+}
+
+async function doLogout(){
+  if(!confirm('Log out?')) return;
+  await sb.auth.signOut();
+  currentUser=null; setUser(null); showPage('login');
+}
+
+async function doUpload(){
+  const file=document.getElementById('fileInput').files[0];
+  const title=document.getElementById('noteTitle').value.trim();
+  const branch=document.getElementById('branch').value;
+  const year=document.getElementById('classYear').value;
+  const semester=document.getElementById('semester').value;
+  const subject=document.getElementById('subject').value;
+  const topic=document.getElementById('topic').value.trim();
+  const type=document.getElementById('noteType').value;
+  const desc=document.getElementById('description').value.trim();
+  const btn=document.getElementById('submitBtn');
+  const wrap=document.getElementById('progressWrap');
+  const bar=document.getElementById('progressBar');
+  const txt=document.getElementById('progressText');
+  if(!file){
+    showToast('Please select a document before uploading.');
+    return;
+  }
+  btn.disabled=true; btn.textContent='Uploading...';
+  wrap.style.display='block'; bar.style.width='10%'; txt.textContent='Uploading file...';
+  try{
+    let file_url=''; let file_name='';
+    if(file){
+      file_name=`${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
+      const{data,error}=await sb.storage.from('notes').upload(file_name,file);
+      if(error) throw error;
+      const{data:urlData}=sb.storage.from('notes').getPublicUrl(file_name);
+      file_url=urlData.publicUrl;
+      bar.style.width='70%'; txt.textContent='Saving note info...';
+    } else {
+      bar.style.width='50%'; txt.textContent='Saving note info...';
+    }
+    const{data:session}=await sb.auth.getSession();
+    const user=session?.session?.user;
+    const{error:dbErr}=await sb.from('notes').insert({
+      title,branch,year,subject,topic,type,description:desc,
+      file_url,file_name,likes:0,rating_sum:0,rating_count:0,
+      uploader_name:user?.user_metadata?.full_name||currentUser?.name||'Anonymous',
+      uploader_email:user?.email||''
+    });
+    if(dbErr) throw dbErr;
+    bar.style.width='100%'; txt.textContent='Upload complete! Redirecting...';
+    setTimeout(()=>{
+      wrap.style.display='none'; bar.style.width='0%';
+      btn.innerHTML='📤 Upload Notes'; btn.disabled=false;
+      ['noteTitle','topic','description'].forEach(id=>document.getElementById(id).value='');
+      ['branch','classYear','semester','subject','noteType'].forEach(id=>document.getElementById(id).selectedIndex=0);
+      document.getElementById('fileInput').value='';
+      updatePreview();
+      showToast('🎉 Note uploaded successfully!');
+      showPage('home');
+    },1000);
+  } catch(e){
+    alert('Upload failed: '+e.message);
+    btn.disabled=false; btn.innerHTML='📤 Upload Notes';
+    wrap.style.display='none';
+  }
+}
+
+async function loadNotes(){
+  const grid=document.getElementById('notesGrid');
+  const branch=document.getElementById('filterBranch').value;
+  const year=document.getElementById('filterYear').value;
+  const subjectF=document.getElementById('filterSubject').value;
+  const typeF=document.getElementById('filterType').value;
+  const sort=document.getElementById('filterSort').value;
+  const search=document.getElementById('searchInput').value.trim();
+  grid.innerHTML='<div class="empty-state"><div class="empty-icon">⏳</div><p>Loading notes...</p></div>';
+
+  let query=sb.from('notes').select('*');
+  if(branch!=='All') query=query.eq('branch',branch);
+  if(year!=='All') query=query.eq('year',year);
+  if(subjectF) query=query.eq('subject',subjectF);
+  if(typeF) query=query.eq('type',typeF);
+  if(search) query=query.ilike('title',`%${search}%`);
+  if(sort==='popular') query=query.order('likes',{ascending:false});
+  else if(sort==='rated') query=query.order('rating_sum',{ascending:false});
+  else query=query.order('created_at',{ascending:false});
+
+  const{data,error}=await query.limit(60);
+  if(error){grid.innerHTML=`<div class="empty-state"><p style="color:#c00">Error: ${error.message}</p></div>`;return;}
+  if(!data||data.length===0){
+    grid.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No notes found</p><span>Try different filters or be the first to upload!</span></div>';
+    document.getElementById('statTotal').textContent='0';
+    return;
+  }
+  document.getElementById('resultsCount').textContent=`${data.length} note${data.length!==1?'s':''}`;
+  document.getElementById('statTotal').textContent=data.length+'+';
+  renderCards(data, grid);
+  updateSubjectFilter(data);
+}
+
+const CARD_COLORS=[
+  ['#E3F2FD','#1565C0'],['#E8F5E9','#2E7D32'],['#FFF3E0','#E65100'],
+  ['#F3E5F5','#6A1B9A'],['#E0F2F1','#00695C'],['#FFF8E1','#F57F17'],['#FCE4EC','#880E4F']
+];
+
+function renderCards(data, container){
+  container.innerHTML='';
+  data.forEach((n,i)=>{
+    const c=CARD_COLORS[i%CARD_COLORS.length];
+    const isImg=n.file_name&&/\.(jpg|jpeg|png|gif)/i.test(n.file_name);
+    const label=n.file_url?(isImg?'🖼 IMG':'📄 PDF'):'📝 TXT';
+    const liked=likedNotes.includes(n.id);
+    const avg=n.rating_count>0?(n.rating_sum/n.rating_count).toFixed(1):'';
+    const card=document.createElement('div');
+    card.className='note-card';
+    card.innerHTML=`
+      <div class="note-thumb" style="background:${c[0]};color:${c[1]};">${label}</div>
+      <h3>${esc(n.title)}</h3>
+      <p class="meta">${esc(n.uploader_name)} · ${n.created_at?ago(new Date(n.created_at)):'recently'}</p>
+      <span class="tag" style="background:${c[0]};color:${c[1]};">${esc(n.subject)}</span>${avg?`<span class="rating-stars-small">★ ${avg}</span>`:''}
+      <div class="card-footer">
+        <button class="like-btn${liked?' liked':''}" onclick="event.stopPropagation();likeNote('${n.id}',this)">
+          ${liked?'♥':'♡'} <span>${n.likes||0}</span>
+        </button>
+        ${n.file_url?`<a class="download-link" href="${n.file_url}" target="_blank" onclick="event.stopPropagation()">⬇ Save</a>`:''}
+      </div>`;
+    card.addEventListener('click',()=>openModal(n));
+    container.appendChild(card);
+  });
+}
+
+function updateSubjectFilter(data){
+  const sel=document.getElementById('filterSubject');
+  const current=sel.value;
+  const subjects=[...new Set(data.map(n=>n.subject).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">All subjects</option>';
+  subjects.forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s;o.textContent=s;
+    if(s===current) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+async function likeNote(id, btn){
+  if(!currentUser){showToast('Log in to like notes');return;}
+  const already=likedNotes.includes(id);
+  if(already){
+    likedNotes=likedNotes.filter(x=>x!==id);
+    const{data}=await sb.from('notes').select('likes').eq('id',id).single();
+    const newLikes=Math.max(0,(data?.likes||1)-1);
+    await sb.from('notes').update({likes:newLikes}).eq('id',id);
+    btn.classList.remove('liked');
+    btn.innerHTML=`♡ <span>${newLikes}</span>`;
+    showToast('Like removed');
+  } else {
+    likedNotes.push(id);
+    const{data}=await sb.from('notes').select('likes').eq('id',id).single();
+    const newLikes=(data?.likes||0)+1;
+    await sb.from('notes').update({likes:newLikes}).eq('id',id);
+    btn.classList.add('liked');
+    btn.innerHTML=`♥ <span>${newLikes}</span>`;
+    showToast('❤️ Liked!');
+  }
+  localStorage.setItem('likedNotes',JSON.stringify(likedNotes));
+}
+
+async function openModal(note){
+  currentNote=note;
+  const isImg=note.file_name&&/\.(jpg|jpeg|png|gif)/i.test(note.file_name);
+  const label=note.file_url?(isImg?'🖼 IMG':'📄 PDF'):'📝 TXT';
+  const c=CARD_COLORS[Math.abs(hashStr(note.id||''))%CARD_COLORS.length];
+  document.getElementById('modalTitle').textContent=note.title;
+  const thumb=document.getElementById('modalThumb');
+  thumb.innerHTML=label; thumb.style.background=c[0]; thumb.style.color=c[1];
+  document.getElementById('modalBranch').textContent=note.branch||'—';
+  document.getElementById('modalYear').textContent=note.year||'—';
+  document.getElementById('modalSubject').textContent=note.subject||'—';
+  document.getElementById('modalType').textContent=note.type||'—';
+  document.getElementById('modalTopic').textContent=note.topic||'—';
+  document.getElementById('modalUploader').textContent=note.uploader_name||'—';
+  const desc=document.getElementById('modalDesc');
+  if(note.description){desc.textContent=note.description;desc.style.display='block';}
+  else desc.style.display='none';
+  const dl=document.getElementById('modalDownload');
+  if(note.file_url){dl.href=note.file_url;dl.style.display='flex';}
+  else dl.style.display='none';
+  const liked=likedNotes.includes(note.id);
+  const likeBtn=document.getElementById('modalLikeBtn');
+  likeBtn.innerHTML=`${liked?'♥':'♡'} ${liked?'Liked':'Like'} (<span id="modalLikeCount">${note.likes||0}</span>)`;
+  likeBtn.style.color=liked?'#E91E63':'';
+  const myR=myRatings[note.id]||0;
+  const avg=note.rating_count>0?note.rating_sum/note.rating_count:0;
+  renderStars(myR||avg,!!myR);
+  const rl=document.getElementById('ratingLabel');
+  if(myR) rl.textContent=`Your rating: ${myR}/5`;
+  else if(avg>0) rl.textContent=`Avg: ${avg.toFixed(1)}/5 (${note.rating_count} ratings)`;
+  else rl.textContent='Rate this note';
+  document.getElementById('noteModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  loadComments(note.id);
+}
+
+function closeModal(){
+  document.getElementById('noteModal').classList.remove('open');
+  document.body.style.overflow='';
+  currentNote=null;
+}
+function closeModalOverlay(e){
+  if(e.target===document.getElementById('noteModal')) closeModal();
+}
+
+async function likeNoteModal(){
+  if(!currentNote) return;
+  if(!currentUser){showToast('Log in to like notes');return;}
+  const id=currentNote.id;
+  const already=likedNotes.includes(id);
+  const likeBtn=document.getElementById('modalLikeBtn');
+  if(already){
+    likedNotes=likedNotes.filter(x=>x!==id);
+    const{data}=await sb.from('notes').select('likes').eq('id',id).single();
+    const nl=Math.max(0,(data?.likes||1)-1);
+    await sb.from('notes').update({likes:nl}).eq('id',id);
+    likeBtn.innerHTML=`♡ Like (<span id="modalLikeCount">${nl}</span>)`;
+    likeBtn.style.color='';
+    showToast('Like removed');
+  } else {
+    likedNotes.push(id);
+    const{data}=await sb.from('notes').select('likes').eq('id',id).single();
+    const nl=(data?.likes||0)+1;
+    await sb.from('notes').update({likes:nl}).eq('id',id);
+    likeBtn.innerHTML=`♥ Liked (<span id="modalLikeCount">${nl}</span>)`;
+    likeBtn.style.color='#E91E63';
+    showToast('❤️ Liked!');
+  }
+  localStorage.setItem('likedNotes',JSON.stringify(likedNotes));
+}
+
+function renderStars(val,isUser){
+  document.querySelectorAll('#modalStars .star').forEach((s,i)=>{
+    s.classList.toggle('filled',(i+1)<=Math.round(val));
+  });
+}
+
+document.querySelectorAll('#modalStars .star').forEach(s=>{
+  s.addEventListener('mouseover',()=>{
+    const v=parseInt(s.dataset.v);
+    document.querySelectorAll('#modalStars .star').forEach((st,i)=>st.classList.toggle('hover',(i+1)<=v));
+  });
+  s.addEventListener('mouseleave',()=>{
+    document.querySelectorAll('#modalStars .star').forEach(st=>st.classList.remove('hover'));
+  });
+});
+
+async function rateNote(val){
+  if(!currentNote) return;
+  if(!currentUser||!currentUser.email){showToast('Log in to rate notes');return;}
+  const id=currentNote.id;
+  const prev=myRatings[id];
+  myRatings[id]=val;
+  localStorage.setItem('myRatings',JSON.stringify(myRatings));
+  const{data}=await sb.from('notes').select('rating_sum,rating_count').eq('id',id).single();
+  let sum=(data?.rating_sum||0),count=(data?.rating_count||0);
+  if(prev){sum=sum-prev+val;}else{sum+=val;count+=1;}
+  await sb.from('notes').update({rating_sum:sum,rating_count:count}).eq('id',id);
+  renderStars(val,true);
+  const avg=count>0?sum/count:0;
+  document.getElementById('ratingLabel').textContent=`Your rating: ${val}/5 · Avg: ${avg.toFixed(1)}/5`;
+  showToast(`⭐ Rated ${val} star${val!==1?'s':''}!`);
+}
+
+async function loadComments(noteId){
+  const list=document.getElementById('commentsList');
+  const count=document.getElementById('commentsCount');
+  list.innerHTML='<p class="no-comments" style="color:var(--muted2)">Loading...</p>';
+  const{data,error}=await sb.from('comments').select('*').eq('note_id',noteId).order('created_at',{ascending:true});
+  if(error||!data||data.length===0){
+    list.innerHTML='<p class="no-comments">No comments yet. Be the first to comment!</p>';
+    count.textContent='0'; return;
+  }
+  count.textContent=data.length;
+  list.innerHTML='';
+  data.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='comment-item';
+    div.innerHTML=`<div class="comment-author">${esc(c.author_name)}</div>
+      <div class="comment-text">${esc(c.text)}</div>
+      <div class="comment-time">${c.created_at?ago(new Date(c.created_at)):''}</div>`;
+    list.appendChild(div);
+  });
+}
+
+async function postComment(){
+  if(!currentNote) return;
+  if(!currentUser){showToast('Log in to comment');return;}
+  const input=document.getElementById('commentInput');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  const{error}=await sb.from('comments').insert({
+    note_id:currentNote.id,text,
+    author_name:currentUser.name||'Anonymous',
+    author_email:currentUser.email||''
+  });
+  if(error){showToast('Could not post comment');return;}
+  showToast('💬 Comment posted!');
+  loadComments(currentNote.id);
+}
+
+async function loadProfile(){
+  if(!currentUser) return;
+  const initials=currentUser.name.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('profileAvatar').textContent=initials;
+  document.getElementById('profileName').textContent=currentUser.name;
+  document.getElementById('profileEmail').textContent=currentUser.email||'Guest account';
+  const grid=document.getElementById('profileGrid');
+  grid.innerHTML='<div class="profile-empty">Loading...</div>';
+  if(!currentUser.email){grid.innerHTML='<div class="profile-empty">Log in to see your uploads.</div>';return;}
+  const{data,error}=await sb.from('notes').select('*').eq('uploader_email',currentUser.email).order('created_at',{ascending:false}).limit(50);
+  document.getElementById('statUploads').textContent=data?.length||0;
+  const totalLikes=(data||[]).reduce((a,n)=>a+(n.likes||0),0);
+  document.getElementById('statLikes').textContent=totalLikes;
+  const ratedNotes=(data||[]).filter(n=>n.rating_count>0);
+  if(ratedNotes.length>0){
+    const overallAvg=ratedNotes.reduce((a,n)=>a+n.rating_sum/n.rating_count,0)/ratedNotes.length;
+    document.getElementById('statRatings').textContent=overallAvg.toFixed(1)+'★';
+  }
+  if(error||!data||data.length===0){
+    grid.innerHTML='<div class="profile-empty">You haven\'t uploaded any notes yet.<br><a style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="showPage(\'upload\')">Upload your first note →</a></div>';
+    return;
+  }
+  renderCards(data, grid);
+}
+
+function showPage(name){
+  if(name==='upload'&&!currentUser){showPage('login');return;}
+  if(name==='profile'&&!currentUser){showPage('login');return;}
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-browse').classList.toggle('active',name==='home');
+  window.scrollTo(0,0);
+  if(name==='home') loadNotes();
+  if(name==='profile') loadProfile();
+}
+
+function goHome(){showPage(currentUser?'home':'login');}
+
+function setUser(user){
+  const liLogin=document.getElementById('li-login');
+  const liLogout=document.getElementById('li-logout');
+  const liUpload=document.getElementById('li-upload');
+  const liProfile=document.getElementById('li-profile');
+  const liUploadBtn=document.getElementById('li-upload-btn');
+  const navRight=document.getElementById('nav-right-wrap');
+  const mmLogin=document.getElementById('mm-login');
+  const mmLogout=document.getElementById('mm-logout');
+  const mmUpload=document.getElementById('mm-upload');
+  const mmProfile=document.getElementById('mm-profile');
+  if(user){
+    liLogin.style.display='none'; liLogout.style.display='list-item'; liUpload.style.display='list-item';
+    liProfile.style.display='list-item'; liUploadBtn.style.display='list-item';
+    mmLogin.style.display='none'; mmLogout.style.display='block';
+    mmUpload.style.display='block'; mmProfile.style.display='block';
+    const initials=user.name.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    navRight.innerHTML=`<div class="nav-avatar" title="My profile (${esc(user.name)})" onclick="showPage('profile')">${initials}</div>`;
+    document.getElementById('pvUploader').textContent=user.name;
+  } else {
+    liLogin.style.display='list-item'; liLogout.style.display='none'; liUpload.style.display='none';
+    liProfile.style.display='none'; liUploadBtn.style.display='none';
+    mmLogin.style.display='block'; mmLogout.style.display='none';
+    mmUpload.style.display='none'; mmProfile.style.display='none';
+    navRight.innerHTML=`<button class="btn-nav-upload" onclick="showPage('login')" id="nav-login-btn">+ Upload Notes</button>`;
+  }
+}
+
+function updatePreview(){
+  const v=id=>document.getElementById(id).value||'—';
+  document.getElementById('pvTitle').textContent=v('noteTitle');
+  document.getElementById('pvBranch').textContent=v('branch');
+  document.getElementById('pvYear').textContent=v('classYear');
+  document.getElementById('pvSemester').textContent=v('semester');
+  document.getElementById('pvSubject').textContent=v('subject');
+  document.getElementById('pvTopic').textContent=v('topic');
+  document.getElementById('pvType').textContent=v('noteType');
+  document.getElementById('pvFile').textContent=document.getElementById('fileInput').files[0]?.name||'No file selected';
+  const hasFile=document.getElementById('fileInput').files.length>0;
+  const ok=['noteTitle','branch','classYear','semester','subject'].every(id=>document.getElementById(id).value) && hasFile;
+  document.getElementById('submitBtn').disabled=!ok;
+}
+
+const subjectMap={
+  "1st year":{
+    "Common":{
+      "Semester 1":["Engineering Mathematics – I","Applied Physics / Chemistry","Programming for Problem Solving (C Language)","English Communication Skills","Engineering Graphics","Basic Electrical / Mechanical Engineering","Physics / Chemistry Lab","C Programming Lab","Workshop Practice (Carpentry, Welding, Fitting, Plumbing)"],
+      "Semester 2":["Engineering Mathematics – II","Data Structures","Python Programming","Environmental Science","Basic Electronics","English Lab","Data Structures Lab","Python Lab","Skill Development Workshop"]
+    }
+  },
+  "2nd year":{
+    "Common":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    },
+    "CSE/IT":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    },
+    "ECE":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    },
+    "EEE":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    },
+    "Mechanical":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    },
+    "Civil":{
+      "Semester 3":["Discrete Mathematics","Object Oriented Programming (Java)","Digital Logic Design","Computer Organization","Database Management Systems","Java Lab","DBMS Lab","Mini Project / Hackathon"],
+      "Semester 4":["Probability & Statistics","Operating Systems","Software Engineering","Computer Networks","Web Technologies","OS Lab","Web Lab","Technical Seminar"]
+    }
+  },
+  "3rd year":{
+    "Common":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    },
+    "CSE/IT":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    },
+    "ECE":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    },
+    "EEE":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    },
+    "Mechanical":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    },
+    "Civil":{
+      "Semester 5":["Design & Analysis of Algorithms","Compiler Design","Machine Learning / AI (for CSE streams)","Data Warehousing / Cloud Computing","Open Elective","Mini Project – II","Internship / Industry Workshop"],
+      "Semester 6":["Cryptography & Network Security","Full Stack Development","Mobile App Development","Data Mining","Professional Elective","Seminar","Certification Course"]
+    }
+  },
+  "4th year":{
+    "Common":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    },
+    "CSE/IT":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    },
+    "ECE":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    },
+    "EEE":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    },
+    "Mechanical":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    },
+    "Civil":{
+      "Semester 7":["DevOps / Big Data / Blockchain / IoT","Professional Elective","Major Project Phase – I","Internship","Aptitude Training","Placement Workshops"],
+      "Semester 8":["Major Project Phase – II","Viva Voce","Entrepreneurship","Industry Seminar","Final Internship / Research Work"]
+    }
+  }
+};
+
+function populateSubjects(){
+  const branch=document.getElementById('branch').value;
+  const year=document.getElementById('classYear').value;
+  const semester=document.getElementById('semester').value;
+  const sel=document.getElementById('subject');
+  sel.innerHTML='<option value="">Select subject...</option>';
+  const subjects=subjectMap[year]?.[branch]?.[semester];
+  if(subjects){
+    subjects.forEach(s=>{
+      const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);
+    });
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change',function(){
+  const file=this.files[0];
+  const t=document.getElementById('previewThumb');
+  if(!file){
+    t.innerHTML='📄 PDF';
+    t.style.background='#E3F2FD';
+    t.style.color='#1565C0';
+    updatePreview();
+    return;
+  }
+  const isPDF=file.type==='application/pdf';
+  t.innerHTML=isPDF?'📄 PDF':'🖼 IMG';
+  t.style.background=isPDF?'#E3F2FD':'#E8F5E9';
+  t.style.color=isPDF?'#1565C0':'#2E7D32';
+  updatePreview();
+});
+
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('dragover');
+  const f=e.dataTransfer.files[0];
+  if(f){document.getElementById('fileInput').files=e.dataTransfer.files;document.getElementById('fileInput').dispatchEvent(new Event('change'));}
+});
+
+function toggleMobileMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
+function closeMobileMenu(){document.getElementById('mobileMenu').classList.remove('open');}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function showMsg(el,msg){el.textContent=msg;el.style.display='block';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ago(date){
+  const s=Math.floor((Date.now()-date)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function hashStr(str){
+  let h=0;
+  for(let i=0;i<str.length;i++) h=((h<<5)-h)+str.charCodeAt(i);
+  return h;
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeModal();
+});
+</script>
+</body>
+</html>
